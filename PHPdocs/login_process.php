@@ -11,6 +11,8 @@
 
 session_start();
 
+$messaje = "Hola desde mi rama dev"
+
 // Credenciales válidas (en producción usar base de datos y hash)
 $USUARIO_CORRECTO = "Javier";
 $PASS_CORRECTO_HASH = password_hash("12345", PASSWORD_DEFAULT); // simula hash
