@@ -19,7 +19,7 @@ $PASS_CORRECTO_HASH = password_hash("12345", PASSWORD_DEFAULT); // simula hash
 
 // Inicializa contador de intentos y tiempo de bloqueo
 if (!isset($_SESSION['intentos'])) {
-    $_SESSION['intentos'] = 0;
+    $_SESSION['intentos'] = 10;
 }
 if (!isset($_SESSION['bloqueo'])) {
     $_SESSION['bloqueo'] = 0; // timestamp del bloqueo
