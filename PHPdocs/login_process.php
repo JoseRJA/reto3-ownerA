@@ -1,83 +1,40 @@
 <?php
 /**
- * Procesa el inicio de sesión del usuario.
+ * Procesa el inicio de sesión del usuario con mejoras de seguridad.
  *
- * Este script gestiona la autenticación básica mediante credenciales fijas
- * y controla el número de intentos fallidos usando sesiones.
- * Si se superan los 3 intentos, el usuario es redirigido a una página
- * de bloqueo o contacto técnico.
- *
- * Medidas implementadas:
- *  - Control de intentos fallidos mediante $_SESSION.
- *  - Redirecciones seguras según el estado de autenticación.
- *  - Protección básica contra datos vacíos usando trim().
- *
- * @package SistemaLogin
+ * Medidas implementadas adicionales:
+ *  - Limpiar entradas con trim() y htmlspecialchars().
+ *  - Simulación de hash de contraseña.
+ *  - Bloqueo temporal tras superar intentos fallidos.
+ *  - Mensajes de error claros con número de intentos restantes.
  */
 
 session_start();
 
-/**
- * Nombre de usuario válido del sistema.
- *
- * @var string
- */
+// Credenciales válidas (en producción usar base de datos y hash)
 $USUARIO_CORRECTO = "Javier";
+$PASS_CORRECTO_HASH = password_hash("12345", PASSWORD_DEFAULT); // simula hash
 
-/**
- * Contraseña válida del sistema.
- *
- * @var string
- */
-$PASS_CORRECTO = "12345";
-
-/**
- * Inicializa el contador de intentos fallidos si no existe.
- *
- * Se utiliza la sesión para persistir los intentos entre peticiones
- * y evitar ataques de fuerza bruta simples.
- */
+// Inicializa contador de intentos y tiempo de bloqueo
 if (!isset($_SESSION['intentos'])) {
     $_SESSION['intentos'] = 0;
 }
-
-/**
- * Redirige al usuario si ha superado el número máximo de intentos.
- *
- * A partir de 3 intentos fallidos se bloquea el acceso.
- */
-if ($_SESSION['intentos'] >= 3) {
-    header("Location: bloqueo.php");
-    exit;
+if (!isset($_SESSION['bloqueo'])) {
+    $_SESSION['bloqueo'] = 0; // timestamp del bloqueo
 }
 
-/**
- * Usuario introducido en el formulario.
- *
- * @var string
- */
-$usuario = isset($_POST['usuario']) ? trim($_POST['usuario']) : '';
+// Comprobar bloqueo temporal (5 min)
+if ($_SESSION['bloqueo'] > time()) {
+    $restante = $_SESSION['bloqueo'] - time();
+    die("Acceso bloqueado temporalmente. Intenta nuevamente en $restante segundos.");
+}
 
-/**
- * Contraseña introducida en el formulario.
- *
- * @var string
- */
+// Recoger datos de formulario de forma segura
+$usuario = isset($_POST['usuario']) ? htmlspecialchars(trim($_POST['usuario'])) : '';
 $contrasenya = isset($_POST['contrasenya']) ? trim($_POST['contrasenya']) : '';
 
-/**
- * Verificación de credenciales.
- *
- * Si las credenciales son correctas:
- *  - Se reinicia el contador de intentos.
- *  - Se guarda el usuario en la sesión.
- *  - Se redirige a la zona privada.
- *
- * Si son incorrectas:
- *  - Se incrementa el contador de intentos.
- *  - Se redirige al formulario o a la página de bloqueo.
- */
-if ($usuario === $USUARIO_CORRECTO && $contrasenya === $PASS_CORRECTO) {
+// Verificar credenciales
+if ($usuario === $USUARIO_CORRECTO && password_verify($contrasenya, $PASS_CORRECTO_HASH)) {
 
     // Login correcto
     $_SESSION['intentos'] = 0;
@@ -92,14 +49,12 @@ if ($usuario === $USUARIO_CORRECTO && $contrasenya === $PASS_CORRECTO) {
     $_SESSION['intentos']++;
 
     if ($_SESSION['intentos'] >= 3) {
-
-        // Bloqueo tras 3 intentos fallidos
+        // Bloqueo temporal de 5 minutos
+        $_SESSION['bloqueo'] = time() + 300; // 300 segundos = 5 minutos
         header("Location: bloqueo.php");
         exit;
-
     } else {
-
-        // Redirección al formulario con mensaje de error
+        // Redirigir con mensaje de error y número de intentos restantes
         $restantes = 3 - $_SESSION['intentos'];
         header("Location: login.php?error=1&restantes=$restantes");
         exit;
