@@ -11,7 +11,7 @@
 
 session_start();
 
-$messaje = "Hola desde mi rama dev"
+$messaje = "Hola, esto es una linea modificada"
 
 // Credenciales válidas (en producción usar base de datos y hash)
 $USUARIO_CORRECTO = "Javier";
